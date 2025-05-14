@@ -1,0 +1,133 @@
+---
+# Bashlinux::Redis::Elasticache Cluster
+#
+#   Cloudformation template to deploy an Elasticache Redis cluster
+#   for a CitusDB backups
+#
+#   Manuel F Martinez
+#   Bashlinux
+#   Los Angeles, CA
+#
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Elasticache Redis Cluster template
+
+###############################################################################
+Parameters:
+
+  Environment:
+    Description: Elasticache Redis cluster environment
+    Type: String
+    MinLength: "1"
+    MaxLength: "20"
+    Default: staging
+    AllowedValues: [ "prod", "staging" ]
+    ConstraintDescription: >
+      Environment name can only contain "prod" or "staging".
+
+  ElasticacheClusterName:
+    Description: Name of the cluster
+    Type: String
+    MinLength: "2"
+    MaxLength: "64"
+    Default: "cache01"
+    AllowedPattern: "[a-zA-Z0-9\\-/:]*"
+
+  ElasticacheInstanceSize:
+    Description: Elasticache instance size for Redis nodes
+    Type: String
+    MinLength: "1"
+    MaxLength: "64"
+    Default: cache.t4g.micro
+    AllowedValues:
+    - cache.t4g.micro
+    - cache.t4g.small
+    - cache.t4g.medium
+    - cache.t4g.large
+    - cache.m7g.medium
+    - cache.m7g.large
+    - cache.m7g.xlarge
+    - cache.m7g.2xlarge
+    - cache.r7g.medium
+    - cache.r7g.large
+    - cache.r7g.xlarge
+    - cache.r7g.2xlarge
+    ConstraintDescription: >
+      EC2 instance size must be micro, small, medium, or large of the "t4g" type
+      or medium, large, xlarge, or 2xlarge of the "m7g" or "r7g" type.
+
+  ElasticacheFailover:
+    Description: Enable Redis failover
+    Type: String
+    MinLength: "4"
+    MaxLength: "5"
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    ConstraintDescription: The value can only be "true" or "false".
+
+  ElasticacheNumNodes:
+    Description: Number of nodes
+    Type: Number
+    MinValue: "0"
+    MaxValue: "3"
+    Default: "0"
+    ConstraintDescription: >
+      The number of read replicas must be less or equal than 3
+
+  ElasticacheNumReplicas:
+    Description: Number of read replicas
+    Type: Number
+    MinValue: "0"
+    MaxValue: "3"
+    Default: "0"
+    ConstraintDescription: >
+      The number of read replicas must be less or equal than 3
+
+  KmsArn:
+    Description: KMS symmetric key to enable encryption of images
+    Type: String
+    MinLength: "1"
+    MaxLength: "128"
+    Default: arn:aws:kms
+    AllowedPattern: "[a-zA-Z0-9\\-/:]*"
+
+###############################################################################
+Resources:
+
+  ElasticacheReplicationGroup:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      AutomaticFailoverEnabled: !Ref ElasticacheFailover
+      CacheNodeType: !Ref ElasticacheInstanceSize
+      CacheSubnetGroupName: !ImportValue
+        "Fn::Sub": "redis-${Environment}-elasticache-subnet-group-ElasticacheSubnetGroupId"
+      Engine: redis
+      EngineVersion: "7.0"
+      KmsKeyId: !Sub "bashlinux-redis-${Environment}"
+      NumNodeGroups: "1"
+      ReplicasPerNodeGroup: !Ref ElasticacheNumReplicas
+      PreferredMaintenanceWindow: "sun:05:00-sun:09:00"
+      ReplicationGroupId: !Sub "cache01-${Environment}"
+      ReplicationGroupDescription: !Sub "Redis cache instance on ${Environment}"
+      SecurityGroupIds:
+        - !ImportValue
+          "Fn::Sub": "redis-${Environment}-elasticache-security-group-EC2RedisClusterSecurityGroupId"
+      SnapshotRetentionLimit: 5
+      SnapshotWindow: "10:00-12:00"
+      Tags:
+      - Key: bashlinux:network-visibility
+        Value: private
+      - Key: bashlinux:environment-type
+        Value: !Ref Environment
+      - Key: bashlinux:can-delete
+        Value: "false"
+      - Key: bashlinux:application-id
+        Value: !Ref AWS::StackName
+      - Key: Name
+        Value: !Sub "${ElasticacheClusterName}-${Environment}"
+
+###############################################################################
+Outputs:
+
+  ElasticacheCluster:
+    Description: "Elasticache: Redis cluster DNS Hostname"
+    Value: !GetAtt ElasticacheReplicationGroup.PrimaryEndPoint.Address

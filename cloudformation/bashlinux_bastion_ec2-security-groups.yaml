@@ -1,0 +1,187 @@
+---
+# Bashlinux::Bastion::EC2 Security Groups
+#
+#   Cloudformation template to deploy the security groups for the
+#   bastion EC2 instance
+#
+#   Manuel F Martinez
+#   Bashlinux
+#   Los Angeles, CA
+#
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Bastion EC2 Security Group template
+
+###############################################################################
+Parameters:
+
+  DeployerIP:
+    Description: IPv4 address of the deployer for OS provisioning
+    Type: String
+    MinLength: "9"
+    MaxLength: "19"
+    Default: 8.8.8.8/32
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: Must be a valid IPv4 address with its CIDR
+
+  DeployerName:
+    Description: Name of the deployer to be identifed on the Security Group
+    Type: String
+    MinLength: "1"
+    MaxLength: "64"
+    Default: Deployer
+    AllowedPattern: "[a-zA-Z0-9\\-]*"
+    ConstraintDescription: Must be a valid name
+
+  Environment:
+    Description: VPC environment
+    Type: String
+    MinLength: "1"
+    MaxLength: "20"
+    Default: staging
+    AllowedValues: [ "prod", "staging" ]
+    ConstraintDescription: Can only contain "prod" or "staging"
+
+  VpcCount:
+    Description: Number of subnets on the vpc
+    Type: String
+    MinLength: "1"
+    MaxLength: "20"
+    Default: dual
+    AllowedValues: [ "single", "dual", "triple" ]
+    ConstraintDescription: Can only contain "single", "dual" or "triple"
+
+###############################################################################
+Resources:
+
+  SecurityGroupBastion:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable internal access to the Bastion instance
+      VpcId: !ImportValue
+        "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-VpcId"
+      Tags:
+      - Key: Name
+        Value: !Sub "bashlinux-${Environment}-sg-bastion"
+      - Key: bashlinux:environment-name
+        Value: !Ref Environment
+      - Key: bashlinux:application-id
+        Value: !Ref AWS::StackName
+      - Key: bashlinux:application-tier
+        Value: sg-bastion
+      - Key: bashlinux:can-delete
+        Value: "false"
+      SecurityGroupIngress:
+      - IpProtocol: "-1"
+        FromPort: "0"
+        ToPort: "65535"
+        SourceSecurityGroupId: !Ref SecurityGroupCommon
+        Description: "Security Group (Common)"
+      - IpProtocol: tcp
+        FromPort: "22"
+        ToPort: "22"
+        CidrIp: !Ref DeployerIP
+        Description: !Sub "IP of the deployer (${DeployerName})"
+      - IpProtocol: udp
+        FromPort: "1194"
+        ToPort: "1194"
+        CidrIp: 0.0.0.0/0
+        Description: "VPN (IPv4)"
+      - IpProtocol: udp
+        FromPort: "1194"
+        ToPort: "1194"
+        CidrIpv6: "::/0"
+        Description: "VPN (IPv6)"
+      - IpProtocol: tcp
+        FromPort: "80"
+        ToPort: "80"
+        CidrIp: 0.0.0.0/0
+        Description: "HTTP (IPv4)"
+      - IpProtocol: tcp
+        FromPort: "80"
+        ToPort: "80"
+        CidrIpv6: "::/0"
+        Description: "HTTP (IPv6)"
+      - IpProtocol: tcp
+        FromPort: "443"
+        ToPort: "443"
+        CidrIp: 0.0.0.0/0
+        Description: "HTTPS (IPv4)"
+      - IpProtocol: tcp
+        FromPort: "443"
+        ToPort: "443"
+        CidrIpv6: "::/0"
+        Description: "HTTPS (IPv6)"
+      - IpProtocol: tcp
+        FromPort: "10050"
+        ToPort: "10051"
+        CidrIp: !ImportValue
+          "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-VpcCidr"
+        Description: "Zabbix (IPv4)"
+      SecurityGroupEgress:
+      - IpProtocol: "-1"
+        FromPort: "0"
+        ToPort: "65535"
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: "-1"
+        FromPort: "0"
+        ToPort: "65535"
+        CidrIpv6: "::/0"
+
+  SecurityGroupEnv:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Central environment group used for overrides
+      VpcId: !ImportValue
+        "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-VpcId"
+      Tags:
+      - Key: Name
+        Value: !Sub "bashlinux-${Environment}-sg-env"
+      - Key: bashlinux:environment-name
+        Value: !Ref Environment
+      - Key: bashlinux:application-id
+        Value: !Ref AWS::StackName
+      - Key: bashlinux:application-tier
+        Value: sg-env
+      - Key: bashlinux:can-delete
+        Value: "false"
+      SecurityGroupIngress: []
+
+  SecurityGroupCommon:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Common environment settings
+      VpcId: !ImportValue
+        "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-VpcId"
+      Tags:
+      - Key: Name
+        Value: !Sub "bashlinux-${Environment}-sg-common"
+      - Key: bashlinux:environment-name
+        Value: !Ref Environment
+      - Key: bashlinux:application-id
+        Value: !Ref AWS::StackName
+      - Key: bashlinux:application-tier
+        Value: sg-common
+      - Key: bashlinux:can-delete
+        Value: "false"
+      SecurityGroupIngress: []
+
+###############################################################################
+Outputs:
+
+  SecurityGroupBastionId:
+    Description: "EC2: Common Security Group ID"
+    Value: !Ref SecurityGroupBastion
+    Export:
+      Name: !Sub "${AWS::StackName}-bastion-Id"
+
+  SecurityGroupEnvId:
+    Description: "EC2: Common Security Group ID"
+    Value: !Ref SecurityGroupEnv
+    Export:
+      Name: !Sub "${AWS::StackName}-env-Id"
+
+  SecurityGroupCommonId:
+    Description: "EC2: Common Security Group ID"
+    Value: !Ref SecurityGroupCommon
+    Export:
+      Name: !Sub "${AWS::StackName}-common-Id"

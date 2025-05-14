@@ -1,0 +1,64 @@
+---
+# Bashlinux::Docker::ECR repository
+#
+#   Cloudformation template to create a private ECR repository for Bashlinux
+#
+#   Manuel F Martinez
+#   Bashlinux
+#   Los Angeles, CA
+#
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ECR repository template
+
+###############################################################################
+Parameters:
+
+  Repository:
+    Description: Name of the repository
+    Type: String
+    MinLength: "1"
+    MaxLength: "32"
+    Default: "bashlinux-"
+    AllowedPattern: "[a-zA-Z0-9\\-]*"
+    ConstraintDescription: >
+      Name of the repository must contains only letters, numbers and hyphens
+
+  KmsArn:
+    Description: KMS symmetric key to enable encryption of images
+    Type: String
+    MinLength: "1"
+    MaxLength: "128"
+    Default: arn:aws:kms
+    AllowedPattern: "[a-zA-Z0-9\\-/:]*"
+
+###############################################################################
+Resources:
+
+  # ECR Repository ------------------------------------------------------------
+  DockerEcrRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: !Ref Repository
+      EncryptionConfiguration:
+        EncryptionType: KMS
+        KmsKey: !Ref KmsArn
+      ImageScanningConfiguration: 
+        ScanOnPush: true
+      Tags:
+      - Key: Name
+        Value: !Ref Repository
+      - Key: bashlinux:application-id
+        Value: !Ref AWS::StackName
+      - Key: bashlinux:network-visibility
+        Value: private
+      - Key: bashlinux:registry-type
+        Value: private
+      - Key: bashlinux:can-delete
+        Value: "false"
+
+###############################################################################
+Outputs:
+
+  DockerEcrRepositoryUri:
+    Value: !GetAtt [DockerEcrRepository, RepositoryUri]
+    Description: ECR Repository URL
