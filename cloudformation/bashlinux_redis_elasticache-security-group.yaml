@@ -40,7 +40,7 @@ Parameters:
     Type: String
     MinLength: "1"
     MaxLength: "32"
-    Default: gesvi
+    Default: bashlinux
     AllowedPattern: "[a-zA-Z0-9\\-]*"
     ConstraintDescription: >
       Name of the organization must contains only letters, numbers and hyphens
@@ -81,7 +81,9 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-redis"
-      - Key: bashlinux:environment-type
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
+      - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
         Value: !Ref AWS::StackName

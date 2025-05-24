@@ -57,7 +57,7 @@ Parameters:
     Type: String
     MinLength: "1"
     MaxLength: "32"
-    Default: gesvi
+    Default: bashlinux
     AllowedPattern: "[a-zA-Z0-9\\-]*"
     ConstraintDescription: >
       Name of the organization must contains only letters, numbers and hyphens
