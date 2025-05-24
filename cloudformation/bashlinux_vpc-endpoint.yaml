@@ -21,7 +21,7 @@ Parameters:
     Default: staging
     AllowedValues: [ "prod", "staging" ]
     ConstraintDescription: >
-      Environment name can only contain "prod" or "staging"
+      Environment name can only contain "prod" or "staging".
 
   EndpointService:
     Description: Amazon service to connect to
