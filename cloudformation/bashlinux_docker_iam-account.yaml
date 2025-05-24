@@ -1,15 +1,15 @@
 ---
-# Bashlinux::Builder::IAM::Account
+# Bashlinux::Docker::IAM::Account
 #
 #   Cloudformation template to deploy the IAM credentials and policies
-#   for granting access on ECR to the Builder server
+#   for granting access on ECR to the Docker build server
 #
 #   Manuel F Martinez
 #   Bashlinux
 #   Los Angeles, CA
 #
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Builder IAM permissions template
+Description: Docker IAM permissions template
 
 ###############################################################################
 Parameters:
@@ -30,39 +30,49 @@ Parameters:
     AllowedValues: [ "prod", "staging" ]
     ConstraintDescription: Can only contain "prod" or "staging".
 
+  Organization:
+    Description: Organization or Customer name
+    Type: String
+    MinLength: "1"
+    MaxLength: "32"
+    Default: gesvi
+    AllowedPattern: "[a-zA-Z0-9\\-]*"
+    ConstraintDescription: >
+      Name of the organization must contains only letters, numbers and hyphens
+
 ###############################################################################
 Resources:
 
   # IAM permissions and credentials -------------------------------------------
-  BuilderIamGroup:
+  DockerIamGroup:
     Type: AWS::IAM::Group
     Properties:
-      GroupName: bashlinux-builder
+      GroupName: bashlinux-docker
       Path: "/bashlinux/"
 
-  BuilderIamManagedPolicy:
+  DockerIamManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      Description: Managed policy for Builder to gain access to the ECR 
-      ManagedPolicyName: bashlinux-builder-policy
+      Description: Managed policy for Docker to gain access to the ECR 
+      ManagedPolicyName: bashlinux-docker-policy
       Path: "/bashlinux/"
       PolicyDocument:
         "Fn::Transform":
           Name: AWS::Include
           Parameters:
-            Location: !Sub "s3://${DevOpsBucketName}/iam-policies/iam_policy_bashlinux_builder_${Environment}.json"
-      Groups: [ !Ref BuilderIamGroup ]
+            Location: !Sub "s3://${DevOpsBucketName}/iam-policies/iam_policy_bashlinux_docker_${Environment}.json"
+      Groups: [ !Ref DockerIamGroup ]
 
-  BuilderIamUser:
+  DockerIamUser:
     Type: AWS::IAM::User
     Properties:
-      UserName: builder
+      UserName: docker
       Path: "/serviceaccounts/"
       Groups:
-      - !Ref BuilderIamGroup
+      - !Ref DockerIamGroup
       Tags:
       - Key: Name
-        Value: builder
+        Value: docker
       - Key: bashlinux:application-id
         Value: !Ref AWS::StackName
       - Key: bashlinux:network-visibility
@@ -72,17 +82,17 @@ Resources:
       - Key: bashlinux:can-delete
         Value: "false"
 
-  BuilderIamAccessKey:
+  DockerIamAccessKey:
     Type: AWS::IAM::AccessKey
     Properties:
-      UserName: !Ref BuilderIamUser
+      UserName: !Ref DockerIamUser
 
 ###############################################################################
 Outputs:
 
-  BuilderAccessKeyId:
-    Value: !Ref BuilderIamAccessKey
-    Description: IAM Access Key ID for Builder server
-  BuilderSecretAccessKey:
-    Value: !GetAtt [BuilderIamAccessKey, SecretAccessKey]
-    Description: IAM Secret Access Key for Builder server
+  DockerAccessKeyId:
+    Value: !Ref DockerIamAccessKey
+    Description: IAM Access Key ID for Docker build server
+  DockerSecretAccessKey:
+    Value: !GetAtt [DockerIamAccessKey, SecretAccessKey]
+    Description: IAM Secret Access Key for Docker build server

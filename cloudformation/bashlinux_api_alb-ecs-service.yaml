@@ -70,6 +70,16 @@ Parameters:
     ConstraintDescription: >
       VPC ID must begin with a letter and contain only alphanumeric characters.
 
+  Organization:
+    Description: Organization or Customer name
+    Type: String
+    MinLength: "1"
+    MaxLength: "32"
+    Default: gesvi
+    AllowedPattern: "[a-zA-Z0-9\\-]*"
+    ConstraintDescription: >
+      Name of the organization must contains only letters, numbers and hyphens
+
 ###############################################################################
 Resources:
 

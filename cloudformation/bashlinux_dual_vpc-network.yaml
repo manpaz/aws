@@ -32,6 +32,16 @@ Parameters:
     AllowedValues: [ "prod", "staging" ]
     ConstraintDescription: Can only contain "prod", "staging".
 
+  Organization:
+    Description: Organization or Customer name
+    Type: String
+    MinLength: "1"
+    MaxLength: "32"
+    Default: gesvi
+    AllowedPattern: "[a-zA-Z0-9\\-]*"
+    ConstraintDescription: >
+      Name of the organization must contains only letters, numbers and hyphens
+
 ###############################################################################
 Mappings:
 
@@ -113,6 +123,8 @@ Resources:
           - - bashlinux
             - !Ref Environment
             - vpc
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -133,6 +145,8 @@ Resources:
           - - bashlinux
             - !Ref Environment
             - internet-gateway
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -184,6 +198,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-public-subnet-1a"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -220,6 +236,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-public-subnet-1b"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -256,6 +274,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-public-subnet-2a"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -292,6 +312,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-public-subnet-2b"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -310,6 +332,8 @@ Resources:
       Tags:
       - Key: Name
         Value: bashlinux-public-route-table
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -364,6 +388,8 @@ Resources:
       Tags:
       - Key: Name
         Value: bashlinux-public-acl
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -566,6 +592,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-private-subnet-1a"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -590,6 +618,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-private-subnet-1b"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -614,6 +644,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-private-subnet-2a"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -638,6 +670,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-private-subnet-2b"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -662,6 +696,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-private-subnet-3a"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -686,6 +722,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-private-subnet-3b"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -705,6 +743,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-nat-gateway-a"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -722,6 +762,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-nat-ipaddress-a"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -739,6 +781,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-nat-gateway-b"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -756,6 +800,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-nat-ipaddress-b"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -772,6 +818,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-private-route-table-a"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -788,6 +836,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-private-route-table-b"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -868,6 +918,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-private-acl"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -970,6 +1022,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-placement-group"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -997,6 +1051,8 @@ Resources:
       HostedZoneTags:
       - Key: Name
         Value: !FindInMap [ Env2Domains, !Ref Environment, Domain ]
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -1013,6 +1069,8 @@ Resources:
       DomainNameServers:
         - AmazonProvidedDNS
       Tags:
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id

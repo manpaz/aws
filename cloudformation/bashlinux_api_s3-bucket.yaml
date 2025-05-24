@@ -44,6 +44,16 @@ Parameters:
     Default: arn:aws:kms
     AllowedPattern: "[a-zA-Z0-9\\-/:]*"
 
+  Organization:
+    Description: Organization or Customer name
+    Type: String
+    MinLength: "1"
+    MaxLength: "32"
+    Default: gesvi
+    AllowedPattern: "[a-zA-Z0-9\\-]*"
+    ConstraintDescription: >
+      Name of the organization must contains only letters, numbers and hyphens
+
 ###############################################################################
 Resources:
   S3BucketEnvVars:
@@ -59,6 +69,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-api-${BucketRole}-${Environment}-${BucketUuid}"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id

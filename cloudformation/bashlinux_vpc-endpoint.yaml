@@ -51,6 +51,16 @@ Parameters:
     MinLength: "1"
     MaxLength: "96"
 
+  Organization:
+    Description: Organization or Customer name
+    Type: String
+    MinLength: "1"
+    MaxLength: "32"
+    Default: gesvi
+    AllowedPattern: "[a-zA-Z0-9\\-]*"
+    ConstraintDescription: >
+      Name of the organization must contains only letters, numbers and hyphens
+
   VPCRouteTables:
     Description: List of private route tables
     Type: CommaDelimitedList

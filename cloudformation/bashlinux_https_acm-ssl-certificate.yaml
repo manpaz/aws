@@ -1,5 +1,5 @@
 ---
-# Bashlinux::ACM::SSL Certificate
+# Bashlinux::HTTPS::ACM::SSL Certificate
 #
 #   Cloudformation template to request an SSL certificate
 #   for a subdomain
@@ -36,6 +36,16 @@ Parameters:
     MaxLength: "64"
     Default: bashlinux.staging
     
+  Organization:
+    Description: Organization or Customer name
+    Type: String
+    MinLength: "1"
+    MaxLength: "32"
+    Default: gesvi
+    AllowedPattern: "[a-zA-Z0-9\\-]*"
+    ConstraintDescription: >
+      Name of the organization must contains only letters, numbers and hyphens
+
 ###############################################################################
 Resources:
 
@@ -59,6 +69,8 @@ Resources:
           - "."
           - - "wildcard"
             - !Ref FQDN
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id

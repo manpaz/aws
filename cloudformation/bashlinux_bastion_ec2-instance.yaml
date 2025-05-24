@@ -52,6 +52,16 @@ Parameters:
     ConstraintDescription: >
       The size of the volume must be an integer between 8 to 256
 
+  Organization:
+    Description: Organization or Customer name
+    Type: String
+    MinLength: "1"
+    MaxLength: "32"
+    Default: gesvi
+    AllowedPattern: "[a-zA-Z0-9\\-]*"
+    ConstraintDescription: >
+      Name of the organization must contains only letters, numbers and hyphens
+
   VpcCount:
     Description: Number of subnets on the vpc
     Type: String
@@ -167,6 +177,8 @@ Resources:
           - "."
           - - "vpn01"
             - !FindInMap [ Env2Domains, !Ref Environment, Domain ]
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
@@ -184,6 +196,8 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub "bashlinux-${Environment}-bastion-ipaddress"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
       - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id

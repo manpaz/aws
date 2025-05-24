@@ -48,6 +48,16 @@ Parameters:
     MaxLength: '96'
     ConstraintDescription: Can only contain a list of Subnet IDs
 
+  Organization:
+    Description: Organization or Customer name
+    Type: String
+    MinLength: "1"
+    MaxLength: "32"
+    Default: gesvi
+    AllowedPattern: "[a-zA-Z0-9\\-]*"
+    ConstraintDescription: >
+      Name of the organization must contains only letters, numbers and hyphens
+
 ###############################################################################
 Resources:
 
