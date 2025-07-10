@@ -1,14 +1,16 @@
 ---
-# Bashlinux::RDS::SecurityGroup
-#  Cloudformation template to deploy a security group
-#  for an RDS cluster exposing the Postgres port
-#  on the public subnet
+# Bashlinux::Postgres::RDS Security Group
 #
-#  Manuel F Martinez
-#  Bashlinux
-#  Los Angeles, CA
+#   Cloudformation template to deploy a security group
+#   for an RDS cluster exposing the Postgres port
+#   on the public subnet
+#
+#   Manuel F Martinez
+#   Bashlinux
+#   Los Angeles, CA
+#  
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Postgres Security Group template
+Description: RDS Postgres Security Group template
 
 ###############################################################################
 Parameters:
@@ -23,16 +25,6 @@ Parameters:
     ConstraintDescription: >
       Environment name can only contain "prod" or "staging".
 
-  EnvVpcId:
-    Description: VPC where the Postgres cluster is deployed
-    Type: String
-    MinLength: "1"
-    MaxLength: "32"
-    Default: vpc-
-    AllowedPattern: "[a-zA-Z][a-zA-Z0-9\\-]*"
-    ConstraintDescription: >
-      VPC ID must begin with a letter and contain only alphanumeric characters.
-
   Organization:
     Description: Organization or Customer name
     Type: String
@@ -46,21 +38,18 @@ Parameters:
 ###############################################################################
 Resources:
 
-  sgEC2PostgresCluster:
+  RdsPostgresSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Enable access to the Postgres cluster port
-      VpcId: !Ref EnvVpcId
+      VpcId: !ImportValue
+        "Fn::Sub": "bashlinux-${Environment}-VpcId"
       SecurityGroupIngress:
-      - IpProtocol: "-1"
-        FromPort: "0"
-        ToPort: "65535"
-        SourceSecurityGroupId: !ImportValue
-          "Fn::Sub": "backend-${Environment}-fargate-cluster-ECSSecurityGroupId"
       - IpProtocol: tcp
         FromPort: "5432"
         ToPort: "5432"
-        CidrIp: 0.0.0.0/0
+        SourceSecurityGroupId: !ImportValue
+          "Fn::Sub": "bashlinux-${Environment}-Ec2BastionSecurityGroupId"
       SecurityGroupEgress:
       - IpProtocol: "-1"
         FromPort: "0"
@@ -68,23 +57,31 @@ Resources:
         CidrIp: 0.0.0.0/0
       Tags:
       - Key: Name
-        Value: !Sub "bashlinux-${Environment}-postgres"
-      - Key: bashlinux:environment-type
+        Value: !Sub "${Organization}-${Environment}-postgres-sg"
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
+      - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-id
         Value: !Ref AWS::StackName
       - Key: bashlinux:can-delete
         Value: "false"
 
+  ingressRdsProxy:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: "Postgres: Access from the RDS Proxy"
+      GroupId: !GetAtt RdsPostgresSecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt RdsPostgresSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: "5432"
+      ToPort: "5432"
+
 ###############################################################################
 Outputs:
 
-  sgEC2PostgresClusterSecurityGroup:
-    Description: "SecurityGroup: Postgres port exposed"
-    Value: !Ref sgEC2PostgresCluster
-
-  sgEC2PostgresClusterGroupId:
-    Description: "SecurityGroup: Postgres port exposed"
-    Value: !GetAtt sgEC2PostgresCluster.GroupId
+  RdsPostgresSecurityGroupId:
+    Description: "SecurityGroup: RDS Postgres Security Group ID"
+    Value: !GetAtt RdsPostgresSecurityGroup.GroupId
     Export:
-      Name: !Sub "${AWS::StackName}-sgEC2PostgresClusterGroupId"
+      Name: !Sub "${Organization}-${Environment}-RdsPostgresSecurityGroupId"

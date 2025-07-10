@@ -1,5 +1,6 @@
 ---
-# Bashlinux::RDS::Cluster
+# Bashlinux::Postgres::RDS Cluster
+#
 #   Cloudformation template to deploy an RDS Postgres instance
 #
 #   Manuel F Martinez
@@ -20,15 +21,7 @@ Parameters:
     Default: staging
     AllowedValues: ["prod","staging"]
     ConstraintDescription: >
-      Environment name can only contain "prod" or "staging".
-
-  KmsArn:
-    Description: KMS symmetric key to encrypt/decrypt RDS storage
-    Type: String
-    MinLength: "1"
-    MaxLength: "128"
-    Default: kms-rds
-    AllowedPattern: "[a-zA-Z0-9\\-/:]*"
+      Environment name can only contain "prod" or "staging"
 
   Organization:
     Description: Organization or Customer name
@@ -39,48 +32,6 @@ Parameters:
     AllowedPattern: "[a-zA-Z0-9\\-]*"
     ConstraintDescription: >
       Name of the organization must contains only letters, numbers and hyphens
-
-  RDSMultiAZ:
-    Description: Either to deploy with a stand-by or just a standalone instance
-    Type: String
-    MinLength: "1"
-    MaxLength: "16"
-    Default: "false"
-    AllowedValues:
-    - "true"
-    - "false"
-
-  RDSPostgresEngineVersion:
-    Description: RDS Engine version for Postgres DB
-    Type: String
-    MinLength: "1"
-    MaxLength: "32"
-    Default: "14.6"
-    AllowedValues:
-    - "14.6"
-    - "14.7"
-    - "14.8"
-    - "15.2"
-    - "15.3"
-    ConstraintDescription: RDS Postgres must be a valid version.
-
-  RDSPostgresUsername:
-    Description: RDS username for Postgres DB
-    Type: String
-    MinLength: "1"
-    MaxLength: "16"
-    Default: postgres
-    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
-    ConstraintDescription: DB Username must contain at least one letter or number.
-
-  RDSPostgresPassword:
-    Description: RDS password for Postgres DB
-    Type: String
-    MinLength: "8"
-    MaxLength: "128"
-    NoEcho: "true"
-    AllowedPattern: "[a-zA-Z0-9#%-=+]*"
-    ConstraintDescription: DB Password must contain at least eight characters.
 
   RDSInstanceSize:
     Description: RDS instance size for Postgres
@@ -101,11 +52,35 @@ Parameters:
       RDS instance size must be micro, small, medium, or large of the "db.t4g"
       type or large, xlarge, 2xlarge, or 4xlarge of the "db.m6g" type.
 
-  RDSPrivateSubnets:
-    Description: Private subnets 01A where the cluster is deployed
-    Type: List<AWS::EC2::Subnet::Id>
+  RDSMultiAZ:
+    Description: Either to deploy with a stand-by or just a standalone instance
+    Type: String
     MinLength: "1"
-    MaxLength: "96"
+    MaxLength: "16"
+    Default: "false"
+    AllowedValues:
+    - "true"
+    - "false"
+
+  RDSPostgresEngineVersion:
+    Description: RDS Engine version for Postgres DB
+    Type: String
+    MinLength: "1"
+    MaxLength: "32"
+    Default: "17.4"
+    AllowedValues:
+    - "17.5"
+    - "17.4"
+    - "17.3"
+    - "17.2"
+    - "17.1"
+    - "16.9"
+    - "16.8"
+    - "15.13"
+    - "15.12"
+    - "14.18"
+    - "14.17"
+    ConstraintDescription: RDS Postgres must be a valid version.
 
   RDSStorageSize:
     Description: RDS instance storage size in GiB
@@ -118,40 +93,42 @@ Parameters:
 ###############################################################################
 Resources:
 
-  RDSPostgresInstance:
+  RdsPostgresInstance:
     Type: AWS::RDS::DBInstance
     Properties:
       AllocatedStorage: !Ref RDSStorageSize
       AllowMajorVersionUpgrade: "false"
       CopyTagsToSnapshot: "true"
       DBInstanceClass: !Ref RDSInstanceSize
-      DBInstanceIdentifier: !Sub "db01-${Environment}"
+      DBInstanceIdentifier: !Sub "db01-${Organization}-${Environment}"
       DBSubnetGroupName: !ImportValue
-        "Fn::Sub": "bashlinux-postgres-${Environment}-rds-subnet-group-RDSSubnetGroupId"
+        "Fn::Sub": "${Organization}-${Environment}-RdsSubnetGroupId"
       DeletionProtection: "true"
       Engine: postgres
       EngineVersion: !Ref RDSPostgresEngineVersion
-      MasterUsername: !Ref RDSPostgresUsername
-      MasterUserPassword: !Ref RDSPostgresPassword
+      MasterUsername: !Ref Organization
+      MasterUserPassword: !Sub "{{resolve:secretsmanager:secret/${Organization}/${Environment}/rds:SecretString:password}}"
       MultiAZ: !Ref RDSMultiAZ
       PubliclyAccessible: "false"
       StorageEncrypted: "true"
-      KmsKeyId: !Ref KmsArn
+      KmsKeyId: !Sub "alias/${Organization}/rds/${Environment}"
       VPCSecurityGroups:
         - !ImportValue
-            "Fn::Sub": "postgres-${Environment}-rds-security-group-sgEC2PostgresClusterGroupId"
+            "Fn::Sub": "${Organization}-${Environment}-RdsPostgresSecurityGroupId"
       Tags:
       - Key: bashlinux:network-visibility
         Value: private
-      - Key: bashlinux:environment-type
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
+      - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:application-role
         Value: db
       - Key: Name
-        Value: !Sub "db01-${Environment}"
+        Value: !Sub "db01-${Organization}-${Environment}"
 
   # RDS Proxy: IAM Roles ----------------------------------
-  RDSProxyPostgresRole:
+  RdsProxyPostgresRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -164,56 +141,62 @@ Resources:
             Action:
               - "sts:AssumeRole"
       ManagedPolicyArns:
-        - !Ref RDSProxyPostgresPolicy
-      RoleName: !Sub "rds-proxy-${Environment}-role"
+        - !Ref RdsProxyPostgresPolicy
+      RoleName: !Sub "${Organization}-${Environment}-rds-proxy-role"
 
-  RDSProxyPostgresPolicy:
+  RdsProxyPostgresPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      ManagedPolicyName: !Sub "rds-proxy-${Environment}-policy"
+      ManagedPolicyName: !Sub "${Organization}-${Environment}-rds-proxy-policy"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Action:
-              - "secretsmanager:*"
-            Resource: '*'
+              - "secretsmanager:GetSecretValue"
+              - "secretsmanager:DescribeSecret"
+            Resource:
+              - !ImportValue
+                  "Fn::Sub": "${Organization}-${Environment}-rds-SecretsManagerCredentialsArn"
           - Effect: Allow
             Action:
-              - "kms:*"
-            Resource: '*'
+              - "kms:Decrypt"
+              - "kms:DescribeKey"
+            Resource:
+              - !ImportValue
+                  "Fn::Sub": "${Organization}-${Environment}-rds-SecretsManagerCredentialsArn"
 
   # RDS Proxy: Postgres -----------------------------------
-  RDSProxySecretCredentials:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub "db01-${Environment}-secrets"
-      SecretString: !Sub '{"username":"${RDSPostgresUsername}","password":"${RDSPostgresPassword}"}'
-
-  RDSProxyPostgres:
+  RdsProxyPostgres:
     Type: AWS::RDS::DBProxy
+    DependsOn: RdsPostgresInstance
     Properties:
       DebugLogging: true
-      DBProxyName: !Sub "db01-${Environment}"
+      DBProxyName: !Sub "db01-${Organization}-${Environment}"
       EngineFamily: POSTGRESQL
       IdleClientTimeout: 120
       RequireTLS: false
-      RoleArn: !GetAtt RDSProxyPostgresRole.Arn
+      RoleArn: !GetAtt RdsProxyPostgresRole.Arn
       Auth:
         - AuthScheme: SECRETS
           IAMAuth: DISABLED
-          SecretArn: !Ref RDSProxySecretCredentials
-      VpcSubnetIds: !Ref RDSPrivateSubnets
+          SecretArn: !ImportValue
+            "Fn::Sub": "${Organization}-${Environment}-rds-SecretsManagerCredentialsArn"
+      VpcSubnetIds: !Split
+        - ","
+        - !ImportValue
+            "Fn::Sub": "${Organization}-${Environment}-RdsSubnetIds"
       VpcSecurityGroupIds:
         - !ImportValue
-            "Fn::Sub": "postgres-${Environment}-rds-security-group-sgEC2PostgresClusterGroupId"
+            "Fn::Sub": "${Organization}-${Environment}-RdsPostgresSecurityGroupId"
 
-  RDSProxyPostgresTargetGroup:
+  RdsProxyPostgresTargetGroup:
     Type: AWS::RDS::DBProxyTargetGroup
+    DependsOn: RdsProxyPostgres
     Properties:
-      DBProxyName: !Ref RDSProxyPostgres
+      DBProxyName: !Ref RdsProxyPostgres
       DBInstanceIdentifiers:
-        - !Ref RDSPostgresInstance
+        - !Ref RdsPostgresInstance
       TargetGroupName: default
       ConnectionPoolConfigurationInfo:
           MaxConnectionsPercent: 100
@@ -223,6 +206,18 @@ Resources:
 ###############################################################################
 Outputs:
 
-  RDSPostgresInstanceId:
+  RdsPostgresInstanceId:
     Description: "RDS: RDS postgres instance ID"
-    Value: !Ref RDSPostgresInstance
+    Value: !Ref RdsPostgresInstance
+
+  RdsPostgresEndpoint:
+    Description: "RDS: RDS postgres connection endpoint"
+    Value: !GetAtt RdsPostgresInstance.Endpoint.Address
+
+  RdsProxyArn:
+    Description: ARN of the DB proxy
+    Value: !GetAtt RdsProxyPostgres.DBProxyArn
+
+  RdsProxyEndpoint:
+    Description: Endpoint to connect to the DB proxy
+    Value: !GetAtt RdsProxyPostgres.Endpoint

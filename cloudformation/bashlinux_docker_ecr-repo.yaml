@@ -13,6 +13,16 @@ Description: ECR repository template
 ###############################################################################
 Parameters:
 
+  Environment:
+    Description: Working environment
+    Type: String
+    MinLength: "1"
+    MaxLength: "20"
+    Default: staging
+    AllowedValues: [ "prod", "staging" ]
+    ConstraintDescription: >
+      Environment name can only contain "prod" or "staging"
+
   Repository:
     Description: Name of the repository
     Type: String
@@ -22,24 +32,6 @@ Parameters:
     AllowedPattern: "[a-zA-Z0-9\\-]*"
     ConstraintDescription: >
       Name of the repository must contains only letters, numbers and hyphens
-
-  KmsArn:
-    Description: KMS symmetric key to enable encryption of images
-    Type: String
-    MinLength: "1"
-    MaxLength: "128"
-    Default: arn:aws:kms
-    AllowedPattern: "[a-zA-Z0-9\\-/:]*"
-
-  Organization:
-    Description: Organization or Customer name
-    Type: String
-    MinLength: "1"
-    MaxLength: "32"
-    Default: bashlinux
-    AllowedPattern: "[a-zA-Z0-9\\-]*"
-    ConstraintDescription: >
-      Name of the organization must contains only letters, numbers and hyphens
 
 ###############################################################################
 Resources:
@@ -51,7 +43,7 @@ Resources:
       RepositoryName: !Ref Repository
       EncryptionConfiguration:
         EncryptionType: KMS
-        KmsKey: !Ref KmsArn
+        KmsKey: !Sub "alias/bashlinux/ecr/${Environment}"
       ImageScanningConfiguration: 
         ScanOnPush: true
       Tags:

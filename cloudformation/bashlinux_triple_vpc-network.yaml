@@ -2,7 +2,7 @@
 # Bashlinux::Triple::VPC Network
 #
 #   Cloudformation template to deploy an environment VPC
-#   with 3 subnets
+#   with 3 Availability Zones
 #
 #   Manuel F Martinez
 #   Bashlinux
@@ -46,11 +46,11 @@ Parameters:
 Mappings:
 
   Region2Index:
-    us-east-1:
+    eu-south-1:
       REGION: "0"
-    us-west-2:
+    eu-west-3:
       REGION: "1"
-    us-east-2:
+    eu-central-1:
       REGION: "2"
 
   Env2Domains:
@@ -136,12 +136,7 @@ Resources:
       EnableDnsHostnames: "true"
       Tags:
       - Key: Name
-        Value:
-          !Join
-          - "-"
-          - - bashlinux
-            - !Ref Environment
-            - vpc
+        Value: !Sub "bashlinux-${Environment}-vpc"
       - Key: bashlinux:organization-name
         Value: !Ref Organization
       - Key: bashlinux:environment-name
@@ -158,12 +153,7 @@ Resources:
     Properties:
       Tags:
       - Key: Name
-        Value:
-          !Join
-          - "-"
-          - - bashlinux
-            - !Ref Environment
-            - internet-gateway
+        Value: !Sub "bashlinux-${Environment}-internet-gateway"
       - Key: bashlinux:organization-name
         Value: !Ref Organization
       - Key: bashlinux:environment-name
@@ -1342,7 +1332,7 @@ Outputs:
     Description: "VPC: Created VPC ID"
     Value: !Ref VPC
     Export:
-      Name: !Sub "${AWS::StackName}-VpcId"
+      Name: !Sub "bashlinux-${Environment}-VpcId"
 
   VpcCidr:
     Description: "VPC: Created VPC CIDR"
@@ -1350,7 +1340,7 @@ Outputs:
       - !FindInMap [ Region2Index,  !Ref AWS::Region, REGION ]
       - !FindInMap [ SubnetConfig, VPC, !Ref Environment ]
     Export:
-      Name: !Sub "${AWS::StackName}-VpcCidr"
+      Name: !Sub "bashlinux-${Environment}-VpcCidr"
 
   VpcMainPublicSubnetId:
     Description: "VPC: Primary Public Subnet ID"

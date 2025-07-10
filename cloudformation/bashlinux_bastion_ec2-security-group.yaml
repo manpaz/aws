@@ -1,5 +1,5 @@
 ---
-# Bashlinux::Bastion::EC2 Security Groups
+# Bashlinux::Bastion::EC2 Security Group
 #
 #   Cloudformation template to deploy the security groups for the
 #   bastion EC2 instance
@@ -51,27 +51,18 @@ Parameters:
     ConstraintDescription: >
       Name of the organization must contains only letters, numbers and hyphens
 
-  VpcCount:
-    Description: Number of subnets on the vpc
-    Type: String
-    MinLength: "1"
-    MaxLength: "20"
-    Default: dual
-    AllowedValues: [ "single", "dual", "triple" ]
-    ConstraintDescription: Can only contain "single", "dual" or "triple"
-
 ###############################################################################
 Resources:
 
-  SecurityGroupBastion:
+  Ec2BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Enable internal access to the Bastion instance
       VpcId: !ImportValue
-        "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-VpcId"
+        "Fn::Sub": "bashlinux-${Environment}-VpcId"
       Tags:
       - Key: Name
-        Value: !Sub "bashlinux-${Environment}-sg-bastion"
+        Value: !Sub "bashlinux-${Environment}-bastion-sg"
       - Key: bashlinux:organization-name
         Value: !Ref Organization
       - Key: bashlinux:environment-name
@@ -83,11 +74,6 @@ Resources:
       - Key: bashlinux:can-delete
         Value: "false"
       SecurityGroupIngress:
-      - IpProtocol: "-1"
-        FromPort: "0"
-        ToPort: "65535"
-        SourceSecurityGroupId: !Ref SecurityGroupCommon
-        Description: "Security Group (Common)"
       - IpProtocol: tcp
         FromPort: "22"
         ToPort: "22"
@@ -127,7 +113,7 @@ Resources:
         FromPort: "10050"
         ToPort: "10051"
         CidrIp: !ImportValue
-          "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-VpcCidr"
+          "Fn::Sub": "bashlinux-${Environment}-VpcCidr"
         Description: "Zabbix (IPv4)"
       SecurityGroupEgress:
       - IpProtocol: "-1"
@@ -139,65 +125,11 @@ Resources:
         ToPort: "65535"
         CidrIpv6: "::/0"
 
-  SecurityGroupEnv:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Central environment group used for overrides
-      VpcId: !ImportValue
-        "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-VpcId"
-      Tags:
-      - Key: Name
-        Value: !Sub "bashlinux-${Environment}-sg-env"
-      - Key: bashlinux:organization-name
-        Value: !Ref Organization
-      - Key: bashlinux:environment-name
-        Value: !Ref Environment
-      - Key: bashlinux:application-id
-        Value: !Ref AWS::StackName
-      - Key: bashlinux:application-tier
-        Value: sg-env
-      - Key: bashlinux:can-delete
-        Value: "false"
-      SecurityGroupIngress: []
-
-  SecurityGroupCommon:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Common environment settings
-      VpcId: !ImportValue
-        "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-VpcId"
-      Tags:
-      - Key: Name
-        Value: !Sub "bashlinux-${Environment}-sg-common"
-      - Key: bashlinux:organization-name
-        Value: !Ref Organization
-      - Key: bashlinux:environment-name
-        Value: !Ref Environment
-      - Key: bashlinux:application-id
-        Value: !Ref AWS::StackName
-      - Key: bashlinux:application-tier
-        Value: sg-common
-      - Key: bashlinux:can-delete
-        Value: "false"
-      SecurityGroupIngress: []
-
 ###############################################################################
 Outputs:
 
-  SecurityGroupBastionId:
-    Description: "EC2: Common Security Group ID"
-    Value: !Ref SecurityGroupBastion
+  Ec2BastionSecurityGroupId:
+    Description: "EC2: Bastion Security Group ID"
+    Value: !Ref Ec2BastionSecurityGroup
     Export:
-      Name: !Sub "${AWS::StackName}-bastion-Id"
-
-  SecurityGroupEnvId:
-    Description: "EC2: Common Security Group ID"
-    Value: !Ref SecurityGroupEnv
-    Export:
-      Name: !Sub "${AWS::StackName}-env-Id"
-
-  SecurityGroupCommonId:
-    Description: "EC2: Common Security Group ID"
-    Value: !Ref SecurityGroupCommon
-    Export:
-      Name: !Sub "${AWS::StackName}-common-Id"
+      Name: !Sub "bashlinux-${Environment}-Ec2BastionSecurityGroupId"

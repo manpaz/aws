@@ -1,7 +1,7 @@
 ---
 # Bashlinux::Redis::Elasticache Security Group
 #
-#   Cloudformation template to deploy an EC2 security group
+#   Cloudformation template to deploy a security group
 #   for an Elasticache cluster exposing the Redis port
 #   on a private subnet
 #
@@ -25,16 +25,6 @@ Parameters:
     ConstraintDescription: >
       Environment name can only contain "prod" or "staging".
 
-  EnvVpcId:
-    Description: VPC where the Redis cluster is deployed
-    Type: String
-    MinLength: "1"
-    MaxLength: "32"
-    Default: vpc-
-    AllowedPattern: "[a-zA-Z][a-zA-Z0-9\\-]*"
-    ConstraintDescription: >
-      VPC ID must begin with a letter and contain only alphanumeric characters.
-
   Organization:
     Description: Organization or Customer name
     Type: String
@@ -45,34 +35,21 @@ Parameters:
     ConstraintDescription: >
       Name of the organization must contains only letters, numbers and hyphens
 
-  OrigingSecurityGroupId:
-    Description: Security Group ID belonging to the origin
-    Type: String
-    MinLength: "1"
-    MaxLength: "32"
-    Default: sg-
-    AllowedPattern: "[a-zA-Z][a-zA-Z0-9\\-]*"
-    ConstraintDescription: >
-      Security group must begin with a letter and contain only alphanumeric
-      characters.
-
 ###############################################################################
 Resources:
 
-  sgEC2RedisCluster:
+  ElasticacheRedisSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Enable access to the Redis cluster port
-      VpcId: !Ref EnvVpcId
+      VpcId: !ImportValue
+        "Fn::Sub": "bashlinux-${Environment}-VpcId"
       SecurityGroupIngress:
-      - IpProtocol: "-1"
-        FromPort: "0"
-        ToPort: "65535"
-        SourceSecurityGroupId: !Ref OrigingSecurityGroupId
       - IpProtocol: tcp
         FromPort: "6379"
         ToPort: "6379"
-        CidrIp: 0.0.0.0/0
+        SourceSecurityGroupId: !ImportValue
+          "Fn::Sub": "bashlinux-${Environment}-Ec2BastionSecurityGroupId"
       SecurityGroupEgress:
       - IpProtocol: "-1"
         FromPort: "0"
@@ -80,7 +57,7 @@ Resources:
         CidrIp: 0.0.0.0/0
       Tags:
       - Key: Name
-        Value: !Sub "bashlinux-${Environment}-redis"
+        Value: !Sub "${Organization}-${Environment}-redis-sg"
       - Key: bashlinux:organization-name
         Value: !Ref Organization
       - Key: bashlinux:environment-name
@@ -90,15 +67,21 @@ Resources:
       - Key: bashlinux:can-delete
         Value: "false"
 
+  ingressElasticacheReplica:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: "Redis: Access from the Elasticache replica"
+      GroupId: !GetAtt ElasticacheRedisSecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt ElasticacheRedisSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: "6379"
+      ToPort: "6379"
+
 ###############################################################################
 Outputs:
 
-  EC2RedisClusterSecurityGroup:
-    Description: "SecurityGroup: Redis port exposed"
-    Value: !Ref sgEC2RedisCluster
-
-  EC2RedisClusterSecurityGroupId:
-    Description: "SecurityGroup: Redis port exposed"
-    Value: !GetAtt sgEC2RedisCluster.GroupId
+  ElasticacheRedisSecurityGroupId:
+    Description: "SecurityGroup: Elasticache Redis Security Group Id"
+    Value: !GetAtt ElasticacheRedisSecurityGroup.GroupId
     Export:
-      Name: !Sub "${AWS::StackName}-EC2RedisClusterSecurityGroupId"
+      Name: !Sub "${Organization}-${Environment}-ElasticacheRedisSecurityGroupId"

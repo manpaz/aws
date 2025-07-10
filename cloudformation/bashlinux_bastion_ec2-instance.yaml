@@ -13,7 +13,7 @@ Description: Bastion EC2 Instance template
 ###############################################################################
 Parameters:
 
-  BastionAsNat:
+  CreateNAT:
     Description: If the bastion is not a NAT GW, then deploy an AWS NAT GW
     Type: String
     MinLength: "2"
@@ -75,25 +75,25 @@ Parameters:
 Conditions:
 
   bastionIsNat:
-    !Equals [ !Ref BastionAsNat, yes ]
+    !Equals [ !Ref CreateNAT, yes ]
 
 ###############################################################################
 Mappings:
 
   AWSBastionAMI:
-    us-east-1:
-      AMI: ami-0ad512af1b9f6ef91
-    us-west-2:
-      AMI: ami-06459b48b47a92d77
-    us-east-2:
-      AMI: ami-0aa5b64f9b561d20f
+    eu-south-1:
+      AMI: ami-0793f1de745d09710
+    eu-west-3:
+      AMI: ami-007ef75762a1e6993
+    eu-central-1:
+      AMI: ami-074571e46551c0e25
 
   Region2Index:
-    us-east-1:
+    eu-south-1:
       REGION: "0"
-    us-west-2:
+    eu-west-3:
       REGION: "1"
-    us-east-2:
+    eu-central-1:
       REGION: "2"
 
   Env2Domains:
@@ -136,7 +136,7 @@ Resources:
         "Fn::Transform":
           Name: AWS::Include
           Parameters:
-            Location: "s3://${DevOpsBucketName}/iam-policies/iam_policy_bashlinux_zabbix_cloudwatch.json"
+            Location: "s3://bashlinux-devops/iam-policies/iam_policy_bashlinux_zabbix_cloudwatch.json"
       Roles: [ !Ref BastionRole ]
 
   # EC2 INSTANCE --------------------------------------------------------------
@@ -161,14 +161,10 @@ Resources:
       - AssociatePublicIpAddress: "true"
         DeviceIndex: 0
         SubnetId: !ImportValue
-          "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-VpcMainPublicSubnetId"
+          "Fn::Sub": "bashlinux-${Environment}-VpcMainPublicSubnetId"
         GroupSet:
         - !ImportValue
-          "Fn::Sub": "bastion-${Environment}-ec2-security-groups-bastion-Id"
-        - !ImportValue
-          "Fn::Sub": "bastion-${Environment}-ec2-security-groups-common-Id"
-        - !ImportValue
-          "Fn::Sub": "bastion-${Environment}-ec2-security-groups-env-Id"
+          "Fn::Sub": "bashlinux-${Environment}-Ec2BastionSecurityGroupId"
       SourceDestCheck: "false"
       Tags:
       - Key: Name
@@ -213,7 +209,7 @@ Resources:
     Condition: bastionIsNat
     Properties:
       RouteTableId: !ImportValue
-          "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-VpcMainPublicSubnetId"
+          "Fn::Sub": "bashlinux-${Environment}-VpcMainPublicSubnetId"
       DestinationCidrBlock: 0.0.0.0/0
       InstanceId: !Ref Bastion
 
@@ -255,59 +251,7 @@ Resources:
       Comment: Alias to the Bastion node that hosts Zabbix server
       AliasTarget:
         HostedZoneId: !ImportValue
-          "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-ZoneId"
-        DNSName:
-          !Join
-          - ""
-          - - "vpn01."
-            - !FindInMap [ Env2Domains, !Ref Environment, Domain ]
-            - "."
-
-  dnsEC2Jenkins:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneName:
-        !Join
-        - ""
-        - - !FindInMap [ Env2Domains, !Ref Environment, Domain ]
-          - "."
-      Name:
-        !Join
-        - ""
-        - - "jenkins."
-          - !FindInMap [ Env2Domains, !Ref Environment, Domain ]
-          - "."
-      Type: A
-      Comment: Alias to the Bastion node that hosts the Jenkins server
-      AliasTarget:
-        HostedZoneId: !ImportValue
-          "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-ZoneId"
-        DNSName:
-          !Join
-          - ""
-          - - "vpn01."
-            - !FindInMap [ Env2Domains, !Ref Environment, Domain ]
-            - "."
-
-  dnsEC2InfluxDB:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneName:
-        !Join
-        - ""
-        - - !FindInMap [ Env2Domains, !Ref Environment, Domain ]
-          - "."
-      Name:
-        !Join
-        - ""
-        - - "influxdb."
-          - !FindInMap [ Env2Domains, !Ref Environment, Domain ]
-          - "."
-      Type: A
-      Comment: Alias to the Bastion node that hosts Zabbix server
-      AliasTarget:
-        HostedZoneId: !ImportValue
-          "Fn::Sub": "${VpcCount}-${Environment}-vpc-network-ZoneId"
+          "Fn::Sub": "bashlinux-${Environment}-PrivateHostedZoneId"
         DNSName:
           !Join
           - ""
@@ -321,10 +265,14 @@ Outputs:
   EC2CBastionInstanceId:
     Description: "EC2: vpn01 instance ID"
     Value: !Ref Bastion
+    Export:
+      Name: !Sub "bashlinux-${Environment}-EC2CBastionInstanceId"
 
   EC2BastionHostname:
     Description: "DNS: vpn01 hostname"
     Value: !Ref dnsEC2Bastion
+    Export:
+      Name: !Sub "bashlinux-${Environment}-EC2BastionHostname"
 
   EC2ZabbixHostname:
     Description: "DNS: zabbix hostname alias"
@@ -333,3 +281,5 @@ Outputs:
   EC2BastionPublicIPv4:
     Description: "DNS: vpn01 public IP address"
     Value: !GetAtt BastionEIP.PublicIp
+    Export:
+      Name: !Sub "bashlinux-${Environment}-EC2BastionPublicIPv4"

@@ -6,13 +6,18 @@
 #
 #   Manuel F Martinez
 #   Bashlinux
-#   Los Angeles, CA
 #
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Elasticache Subnet Group template
 
 ###############################################################################
 Parameters:
+
+  ElasticachePrivateSubnets:
+    Description: Private subnets 01A where the cluster is deployed
+    Type: List<AWS::EC2::Subnet::Id>
+    MinLength: "1"
+    MaxLength: "96"
 
   Environment:
     Description: Redis cluster environment
@@ -23,12 +28,6 @@ Parameters:
     AllowedValues: [ "prod", "staging" ]
     ConstraintDescription: >
       Environment name can only contain "prod" or "staging".
-
-  ElasticachePrivateSubnets:
-    Description: Private subnets 01A where the cluster is deployed
-    Type: List<AWS::EC2::Subnet::Id>
-    MinLength: "1"
-    MaxLength: "96"
 
   Organization:
     Description: Organization or Customer name
@@ -60,7 +59,7 @@ Resources:
       - Key: bashlinux:application-id
         Value: !Ref AWS::StackName
       - Key: Name
-        Value: !Sub "bashlinux-redis-${Environment}"
+        Value: !Sub "${Organization}-redis-${Environment}"
 
 ###############################################################################
 Outputs:
@@ -69,5 +68,5 @@ Outputs:
     Description: "SubnetGroup: Elasticache Redis SubnetGroup"
     Value: !Ref ElasticacheSubnetGroup
     Export:
-      Name: !Sub "${AWS::StackName}-ElasticacheSubnetGroupId"
+      Name: !Sub "${Organization}-${Environment}-ElasticacheSubnetGroupId"
 

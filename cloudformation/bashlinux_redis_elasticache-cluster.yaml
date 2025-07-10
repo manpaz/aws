@@ -24,14 +24,6 @@ Parameters:
     ConstraintDescription: >
       Environment name can only contain "prod" or "staging".
 
-  ElasticacheClusterName:
-    Description: Name of the cluster
-    Type: String
-    MinLength: "2"
-    MaxLength: "64"
-    Default: "cache01"
-    AllowedPattern: "[a-zA-Z0-9\\-/:]*"
-
   ElasticacheInstanceSize:
     Description: Elasticache instance size for Redis nodes
     Type: String
@@ -82,13 +74,19 @@ Parameters:
     ConstraintDescription: >
       The number of read replicas must be less or equal than 3
 
-  KmsArn:
-    Description: KMS symmetric key to enable encryption of images
+  ElasticacheRedisEngineVersion:
+    Description: Elasticache Engine version for Redis
     Type: String
     MinLength: "1"
-    MaxLength: "128"
-    Default: arn:aws:kms
-    AllowedPattern: "[a-zA-Z0-9\\-/:]*"
+    MaxLength: "32"
+    Default: "7.1"
+    AllowedValues:
+    - "7.1"
+    - "7.0"
+    - "6.2"
+    - "6.0"
+    - "5.0.6"
+    ConstraintDescription: Elasticache Redis must be a valid version.
 
   Organization:
     Description: Organization or Customer name
@@ -109,18 +107,18 @@ Resources:
       AutomaticFailoverEnabled: !Ref ElasticacheFailover
       CacheNodeType: !Ref ElasticacheInstanceSize
       CacheSubnetGroupName: !ImportValue
-        "Fn::Sub": "redis-${Environment}-elasticache-subnet-group-ElasticacheSubnetGroupId"
+        "Fn::Sub": "${Organization}-${Environment}-ElasticacheSubnetGroupId"
       Engine: redis
-      EngineVersion: "7.0"
-      KmsKeyId: !Sub "bashlinux-redis-${Environment}"
+      EngineVersion: !Ref ElasticacheRedisEngineVersion
+      KmsKeyId: !Sub "alias/${Organization}/elasticache/${Environment}"
       NumNodeGroups: "1"
       ReplicasPerNodeGroup: !Ref ElasticacheNumReplicas
       PreferredMaintenanceWindow: "sun:05:00-sun:09:00"
-      ReplicationGroupId: !Sub "cache01-${Environment}"
-      ReplicationGroupDescription: !Sub "Redis cache instance on ${Environment}"
+      ReplicationGroupId: !Sub "cache01-${Organization}-${Environment}"
+      ReplicationGroupDescription: !Sub "Redis cache instance for ${Organization} on ${Environment}"
       SecurityGroupIds:
         - !ImportValue
-          "Fn::Sub": "redis-${Environment}-elasticache-security-group-EC2RedisClusterSecurityGroupId"
+          "Fn::Sub": "${Organization}-${Environment}-ElasticacheRedisSecurityGroupId"
       SnapshotRetentionLimit: 5
       SnapshotWindow: "10:00-12:00"
       Tags:
@@ -135,11 +133,15 @@ Resources:
       - Key: bashlinux:application-id
         Value: !Ref AWS::StackName
       - Key: Name
-        Value: !Sub "${ElasticacheClusterName}-${Environment}"
+        Value: !Sub "cache01-${Organization}-${Environment}"
 
 ###############################################################################
 Outputs:
 
-  ElasticacheCluster:
-    Description: "Elasticache: Redis cluster DNS Hostname"
+  ElasticacheRedisId:
+    Description: "Elasticache: Redis cluster ID"
+    Value: !Ref ElasticacheReplicationGroup
+
+  ElasticacheRedisEndpoint:
+    Description: "Elasticache: Redis cluster DNS address of the primary r/w cache node"
     Value: !GetAtt ElasticacheReplicationGroup.PrimaryEndPoint.Address

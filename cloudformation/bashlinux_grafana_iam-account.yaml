@@ -60,7 +60,7 @@ Resources:
         "Fn::Transform":
           Name: AWS::Include
           Parameters:
-            Location: !Sub "s3://${DevOpsBucketName}/iam-policies/iam_policy_bashlinux_grafana_cloudwatch.json"
+            Location: !Sub "s3://bashlinux-devops/iam-policies/iam_policy_bashlinux_grafana_cloudwatch.json"
       Groups: [ !Ref GrafanaIamGroup ]
 
   GrafanaIamUser:

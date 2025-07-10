@@ -1,11 +1,13 @@
 ---
-#  Bashlinux::Postgres::RDS::Subnet Group
-#  Cloudformation template to deploy an RDS Subnet Group
-#  for a Postgres cluster on a private subnet
+# Bashlinux::Postgres::RDS Subnet Group
 #
-#  Manuel F Martinez
-#  Bashlinux
-#  Los Angeles, CA
+#   Cloudformation template to deploy an RDS Subnet Group
+#   for a Postgres cluster on a private subnet
+#
+#   Manuel F Martinez
+#   Bashlinux
+#   Los Angeles, CA
+#
 AWSTemplateFormatVersion: "2010-09-09"
 Description: RDS Subnet Group template
 
@@ -41,30 +43,37 @@ Parameters:
 ###############################################################################
 Resources:
 
-  RDSSubnetGroup:
+  RdsSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
       DBSubnetGroupDescription: PostgresSubnetGroup
-      DBSubnetGroupName: !Sub "bashlinux-postgres-${Environment}"
+      DBSubnetGroupName: !Sub "${Organization}-postgres-${Environment}"
       SubnetIds: !Ref RDSPrivateSubnets
       Tags:
       - Key: bashlinux:network-visibility
         Value: private
-      - Key: bashlinux:environment-type
+      - Key: bashlinux:organization-name
+        Value: !Ref Organization
+      - Key: bashlinux:environment-name
         Value: !Ref Environment
       - Key: bashlinux:can-delete
         Value: "false"
       - Key: bashlinux:application-id
         Value: !Ref AWS::StackName
       - Key: Name
-        Value: !Sub "bashlinux-postgres-${Environment}"
+        Value: !Sub "${Organization}-postgres-${Environment}"
 
 ###############################################################################
 Outputs:
 
-  RDSSubnetGroupId:
+  RdsSubnetGroupId:
     Description: "SubnetGroup: RDS Postgres SubnetGroup"
-    Value: !Ref RDSSubnetGroup
+    Value: !Ref RdsSubnetGroup
     Export:
-      Name: !Sub "${AWS::StackName}-RDSSubnetGroupId"
+      Name: !Sub "${Organization}-${Environment}-RdsSubnetGroupId"
 
+  RdsSubnetIds:
+    Description: "SubnetIds: RDS Postgres SubnetIDs belonging to the Subnet Group"
+    Value: !Join [ ",", !Ref RDSPrivateSubnets ]
+    Export:
+      Name: !Sub "${Organization}-${Environment}-RdsSubnetIds"
