@@ -1,7 +1,7 @@
 ---
 # Bashlinux::Dual::VPC Network
 #
-#   Cloudformation template to deploy an environment VPC
+#   Cloudformation template to deploy a VPC for the specified environment
 #   with 2 subnets
 #
 #   Manuel F Martinez

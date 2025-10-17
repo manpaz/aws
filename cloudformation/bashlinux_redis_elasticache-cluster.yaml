@@ -2,7 +2,6 @@
 # Bashlinux::Redis::Elasticache Cluster
 #
 #   Cloudformation template to deploy an Elasticache Redis cluster
-#   for a CitusDB backups
 #
 #   Manuel F Martinez
 #   Bashlinux

@@ -1,5 +1,5 @@
 ---
-# CloudFormation::Private::S3 Bucket
+# Bashlinux::Private::S3 Bucket
 #
 #   Cloudformation template to deploy a private S3 bucket for the Application
 #

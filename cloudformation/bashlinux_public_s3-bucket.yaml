@@ -1,5 +1,5 @@
 ---
-# CloudFormation::Public::S3 Bucket
+# Bashlinux::Public::S3 Bucket
 #
 #   Cloudformation template to deploy a public S3 bucket
 #   to allow signed requests via https through an API Gateway

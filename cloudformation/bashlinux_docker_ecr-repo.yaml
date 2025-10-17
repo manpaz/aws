@@ -1,7 +1,7 @@
 ---
 # Bashlinux::Docker::ECR repository
 #
-#   Cloudformation template to create a private ECR repository for Bashlinux
+#   Cloudformation template to create a private ECR repository
 #
 #   Manuel F Martinez
 #   Bashlinux
