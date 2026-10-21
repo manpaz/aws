@@ -1,0 +1,173 @@
+---
+# Bashlinux::SES Bounce::SNS Notifications
+#
+#   Cloudformation template to setup SNS notifications
+#   for SES bounce
+#
+#   Manuel F Martinez
+#   Bashlinux
+#   Los Angeles, CA
+#
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SES Bounce SNS Notifications template
+
+###############################################################################
+Parameters:
+
+  Environment:
+    Description: Elasticache Redis cluster environment
+    Type: String
+    MinLength: "1"
+    MaxLength: "20"
+    Default: staging
+    AllowedValues: [ "prod", "staging" ]
+    ConstraintDescription: >
+      Environment name can only contain "prod" or "staging".
+
+  SESBounceMonitorEmail:
+    Description: Email address to subscribe to bounce notifications
+    Type: String
+    MinLength: "7"
+    MaxLength: "128"
+    AllowedPattern: ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$
+    ConstraintDescription: >
+      Bounce Monitor Email must be a valid email address
+
+  SESComplaintMonitorEmail:
+    Description: Email address to subscribe to bounce notifications
+    Type: String
+    MinLength: "7"
+    MaxLength: "128"
+    AllowedPattern: ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$
+    ConstraintDescription: >
+      Complaint Monitor Email must be a valid email address
+
+###############################################################################
+Resources:
+
+  BounceTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "ses-${Environment}-bounce-topic"
+      Tags:
+      - Key: bashlinux:network-visibility
+        Value: public
+      - Key: bashlinux:environment-name
+        Value: !Ref Environment
+      - Key: bashlinux:can-delete
+        Value: "false"
+      - Key: bashlinux:application-id
+        Value: !Ref AWS::StackName
+
+  ComplaintTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "ses-${Environment}-complaint-topic"
+      Tags:
+      - Key: bashlinux:network-visibility
+        Value: public
+      - Key: bashlinux:environment-name
+        Value: !Ref Environment
+      - Key: bashlinux:can-delete
+        Value: "false"
+      - Key: bashlinux:application-id
+        Value: !Ref AWS::StackName
+
+  BounceSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref BounceTopic
+      Protocol: email
+      Endpoint: !Ref SESBounceMonitorEmail
+
+  ComplaintSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref ComplaintTopic
+      Protocol: email
+      Endpoint: !Ref SESComplaintMonitorEmail
+
+  BounceTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref BounceTopic
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ses.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref BounceTopic
+            Condition:
+              StringEquals:
+                "AWS:SourceAccount": !Ref AWS::AccountId
+
+  ComplaintTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref ComplaintTopic
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ses.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref ComplaintTopic
+            Condition:
+              StringEquals:
+                "AWS:SourceAccount": !Ref AWS::AccountId
+
+  # SES ---------------------------------------------------
+  SESEmailFeedbackConfig:
+    Type: AWS::SES::ConfigurationSet
+    Properties:
+      Name: !Sub "ses-${Environment}-feedback-config"
+
+# NOTE: Althought SNSDestination is in the documentation
+#       seems to be not supported yet by CloudFormation
+#       Meanwhile this is done from the CLi
+
+#  SESBounceNotification:
+#    Type: AWS::SES::ConfigurationSetEventDestination
+#    DependsOn: BounceTopic
+#    Properties:
+#      ConfigurationSetName: !Ref SESEmailFeedbackConfig
+#      EventDestination:
+#        Name: !Sub "bashlinux-${Environment}-bounce-destination"
+#        Enabled: true
+#        MatchingEventTypes:
+#          - Bounce
+#        SNSDestination:
+#          TopicARN: !Ref BounceTopic
+
+#  SESComplaintNotification:
+#    Type: AWS::SES::ConfigurationSetEventDestination
+#    DependsOn: ComplaintTopic
+#    Properties:
+#      ConfigurationSetName: !Ref SESEmailFeedbackConfig
+#      EventDestination:
+#        Name: !Sub "bashlinux-${Environment}-complaint-destination"
+#        Enabled: true
+#        MatchingEventTypes:
+#          - Complaint
+#        SNSDestination:
+#          TopicARN: !Ref ComplaintTopic
+
+###############################################################################
+Outputs:
+
+  BounceTopicArn:
+    Description: ARN of the SNS Bounce Topic
+    Value: !Ref BounceTopic
+    Export:
+      Name: !Sub "bashlinux-${Environment}-BounceTopicArn"
+
+  ComplaintTopicArn:
+    Description: ARN of the SNS Complaint Topic
+    Value: !Ref ComplaintTopic
+    Export:
+      Name: !Sub "bashlinux-${Environment}-ComplaintTopicArn"
