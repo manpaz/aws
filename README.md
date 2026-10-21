@@ -2,6 +2,67 @@
 
 IaC repository for AWS deployments
 
+## Covered services
+* ACM SSL Certificates
+* API Gateway
+* Cloudwatch Alarms
+* DocumentDB
+* EC2 ALB
+* EC2 ALB Target Groups
+* EC2 Autoscaling Groups
+* EC2 Instances
+* EC2 Security Groups
+* ECR Repositories
+* ECS Cluster
+* ECS Services
+* ECS Service Discovery
+* ECS Task Definitions
+* EKS Cluster
+* EKS Node Groups
+* Elasticache Redis Cluster
+* Elasticache Subnet Group
+* Fargate
+* IAM Accounts
+* IAM Roles
+* IAM Managed Policies
+* KMS for S3 Buckets
+* KMS for EBS Volumes on EC2 Instances
+* KMS for EBS Volumes on RDS
+* KMS for EBS Volumes on DocumentDB
+* KMS for EBS Volumes on Elasticache
+* KMS for ECR Repositories
+* KMS for Secrets Manager
+* Lambda
+* MQ RabbitMQ Cluster
+* MQ Subnet Groups
+* RDS MySQL Cluster
+* RDS MySQL Instances
+* RDS PostgreSQL Cluster
+* RDS PostgreSQL Instances
+* RDS Subnet Groups
+* Route53 Private Hosted Zones
+* Route53 Public Hosted Zones
+* Route53 Record Sets
+* S3 Buckets
+* Secrets Manager
+* SES Configuration Event
+* SNS Subscriptions
+* SNS Topics
+* VPC Egress Only Gateway
+* VPC Endpoint for Cloudwatch
+* VPC Endpoint for ECR
+* VPC Endpoint for S3
+* VPC Endpoint for SES
+* VPC Internet Gateway
+* VPC IPv6 Subnets
+* VPC NAT Gateway
+* VPC Network ACLs
+* VPC Network on a Single AZ
+* VPC Network with 2 AZs
+* VPC Network with 3 AZs
+* VPC Private Subnets
+* VPC Public Subnets
+
 ## EC2 Subscription
 One of the processes that cannot be automated yet, is to register to the
 subscriptions of the Linux distributions, that needs to be done manually before
